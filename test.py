@@ -2,19 +2,34 @@ from ultralytics import YOLO
 import cv2
 import time
 # Load a YOLOv8n PyTorch model
-model = YOLO("yolo11m.pt")
+model = YOLO("yolo11n.pt")
 
 # Export the model
 model.export(format="openvino", opset=11)  # creates 'yolov8n_openvino_model/'
 
 # Load the exported OpenVINO model
-ov_model = YOLO("yolo11m_openvino_model/")
+ov_model = YOLO("yolo11n_openvino_model/")
 
 # Run inference
 results = ov_model("https://ultralytics.com/images/bus.jpg")
 # Buka video (ganti path jika perlu)
 video_path = "input.mp4"
 cap = cv2.VideoCapture(0)
+
+
+# Set format ke MJPEG (biar support resolusi tinggi dan 60FPS)
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+
+# Set resolusi 1280x720
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+# Set FPS ke 60
+cap.set(cv2.CAP_PROP_FPS, 60)
+
+# Tampilkan properti yang sebenarnya digunakan
+print("Resolusi:", cap.get(cv2.CAP_PROP_FRAME_WIDTH), "x", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+print("FPS:", cap.get(cv2.CAP_PROP_FPS))
 # Inisialisasi FPS tracker
 prev_time = time.time()
 # Loop proses frame
@@ -27,7 +42,7 @@ while cap.isOpened():
     start_time = time.time()
 
     # Inference dengan device (jika didukung)
-    results = ov_model(frame, device="intel:npu")
+    results = ov_model(frame, device="intel:n=gpu", max_det=4, conf=0.6, verbose=False)
     
     # print(results)
     # Ambil hasil deteksi dari frame (YOLO kadang mengembalikan list of results)
